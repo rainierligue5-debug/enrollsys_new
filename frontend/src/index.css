@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden;
+  }
+  #root {
+    min-height: 100vh;
+    min-width: 0;
+  }
+}
