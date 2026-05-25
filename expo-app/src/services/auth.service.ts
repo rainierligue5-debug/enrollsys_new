@@ -185,3 +185,19 @@ export const clearUserData = async (): Promise<void> => {
     console.warn('AsyncStorage error while clearing data:', error);
   }
 };
+
+export const updateProfile = async (payload: { name?: string; email?: string; password?: string }) => {
+  try {
+    const response = await API.patch('auth/me/', payload);
+    // Update cached user
+    if (response.data) {
+      await AsyncStorage.setItem('user', JSON.stringify(response.data));
+    }
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.data) {
+      throw new Error(error.response.data?.error || JSON.stringify(error.response.data));
+    }
+    throw new Error('Failed to update profile');
+  }
+};

@@ -247,8 +247,8 @@ def register_student(request):
     
     activation_uid = force_str(urlsafe_base64_encode(force_bytes(user.pk)))
     token = default_token_generator.make_token(user)
-    activation_link = f"http://192.168.1.35:8000/api/auth/activate/?uid={activation_uid}&token={token}"
-    
+    activation_link = f"{settings.FRONTEND_URL.rstrip('/')}/activate?uid={activation_uid}&token={token}"
+
     email_subject = 'Activate Your Student Account'
     email_body = f"""
     Hello {user.name},
@@ -279,13 +279,20 @@ def register_student(request):
         },
     }, status=status.HTTP_201_CREATED)
 
-    # make some change here !!
+# make some change here !!
 @csrf_exempt
-@api_view(['GET'])
+@api_view(['GET', 'POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def activate_account(request):
-    uid = request.GET.get('uid', '')
-    token = request.GET.get('token', '')
+    # Support both:
+    #  - GET  /api/auth/activate/?uid=...&token=...
+    #  - POST /api/auth/activate/  {"uid": "...", "token": "..."}
+    if request.method == 'OPTIONS':
+        return Response(status=status.HTTP_200_OK)
+
+    uid = request.GET.get('uid') or (request.data.get('uid') if isinstance(getattr(request, 'data', None), dict) else None) or ''
+    token = request.GET.get('token') or (request.data.get('token') if isinstance(getattr(request, 'data', None), dict) else None) or ''
+
 
     if not uid or not token:
         return Response(
@@ -294,9 +301,15 @@ def activate_account(request):
         )
 
     try:
-        pk = force_str(urlsafe_base64_decode(uid))
+        decoded_pk = force_str(urlsafe_base64_decode(uid))
+        # If your PK is an integer, Django will compare correctly only with the right type
+        try:
+            pk: any = int(decoded_pk)
+        except (TypeError, ValueError):
+            pk = decoded_pk
         user = User.objects.get(pk=pk)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+
         return Response(
             {'uid': ['Invalid user id or user doesn\'t exist.']},
             status=status.HTTP_400_BAD_REQUEST
@@ -350,7 +363,7 @@ def register_admin(request):
     
     activation_uid = force_str(urlsafe_base64_encode(force_bytes(user.pk)))
     token = default_token_generator.make_token(user)
-    activation_link = f"http://192.168.1.35:8000/api/auth/activate/?uid={activation_uid}&token={token}"
+    activation_link = f"{settings.FRONTEND_URL.rstrip('/')}/activate?uid={activation_uid}&token={token}"
 
     email_subject = 'Activate Your Admin Account'
     email_body = f"""

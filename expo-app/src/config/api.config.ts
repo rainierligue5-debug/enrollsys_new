@@ -61,9 +61,20 @@ API.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('access_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+
+      // DEBUG: confirm token is present before API calls (helps diagnose 401 in Expo Go)
+      if (!token) {
+        // Avoid noisy warnings during app startup; log only during development.
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.debug('[API CONFIG] Missing access_token in storage (token is null/empty)');
+        }
+        // Keep request without Authorization -> backend should return 401
+      } else {
+        // Ensure we ALWAYS set the header when a token exists
+        config.headers = config.headers ?? {};
+        (config.headers as any).Authorization = `Bearer ${token}`;
       }
+
     } catch (error) {
       // Silently fail - AsyncStorage might not be ready yet
       // This is expected during app initialization

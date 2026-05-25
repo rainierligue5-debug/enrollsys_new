@@ -5,7 +5,10 @@ import json
 def test_bulk_enroll():
     # First login to get token
     login_url = 'http://127.0.0.1:8000/api/auth/login/'
-    login_data = {'email': 'admin@admin.edu', 'password': 'admin123'}
+    login_data = {'email': 'admin0@gmail.com', 'password': 'admin123'}
+
+    # If this login fails, check that the admin account is activated.
+
     
     print('Logging in as admin...')
     try:

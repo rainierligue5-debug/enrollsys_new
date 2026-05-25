@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getSubjects, createSubject, updateSubject, deleteSubject } from '../../services/subjects.service';
 import { Subject, NewSubject } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { useAdminRefresh } from '../../contexts/AdminRefreshContext';
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
@@ -51,6 +53,8 @@ const styles = StyleSheet.create({
 
 const SubjectsScreen: React.FC = () => {
   const { width } = useWindowDimensions();
+  const { bump } = useAdminRefresh();
+
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -102,7 +106,9 @@ const SubjectsScreen: React.FC = () => {
       }
       await loadSubjects();
       resetForm();
+      bump();
     } catch (err: any) {
+
       console.error(err);
       setError(err?.response?.data?.error || 'Failed to save subject.');
     } finally {
@@ -120,6 +126,7 @@ const SubjectsScreen: React.FC = () => {
           try {
             await deleteSubject(id);
             await loadSubjects();
+            bump();
           } catch (err) {
             console.error(err);
             Alert.alert('Error', 'Failed to delete subject.');

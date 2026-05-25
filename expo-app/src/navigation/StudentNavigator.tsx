@@ -4,43 +4,48 @@
  */
 
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { TouchableOpacity, View, Text } from 'react-native';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import StudentDashboardScreen from '../screens/student/StudentDashboardScreen';
-import { TouchableOpacity, Text } from 'react-native';
+import SubjectsScreen from '../screens/student/SubjectsScreen';
+import ScheduleScreen from '../screens/student/ScheduleScreen';
+import NotificationsScreen from '../screens/student/NotificationsScreen';
+import ProfileScreen from '../screens/student/ProfileScreen';
 import { useAuth } from '../contexts/AuthContext';
 
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 export const StudentNavigator: React.FC = () => {
   const { signOut } = useAuth();
 
   return (
-    <Stack.Navigator
-      screenOptions={{
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
         headerShown: true,
-        headerStyle: {
-          backgroundColor: '#0f172a',
+        headerStyle: { backgroundColor: '#0f172a' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: '700' },
+        tabBarShowLabel: true,
+        tabBarStyle: { height: 62, paddingBottom: 6, paddingTop: 6 },
+        tabBarIcon: ({ color, size }) => {
+          let name = 'home';
+          if (route.name === 'Home') name = 'home-outline';
+          if (route.name === 'Subjects') name = 'book-open-page-variant-outline';
+          if (route.name === 'Schedule') name = 'calendar-range';
+          if (route.name === 'Notifications') name = 'bell-outline';
+          if (route.name === 'Profile') name = 'account-circle-outline';
+          return <Icon name={name} size={size} color={color} />;
         },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 18,
-        },
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => signOut()}
-            style={{ marginRight: 16, paddingHorizontal: 12, paddingVertical: 8 }}
-          >
-            <Text style={{ color: '#ef4444', fontSize: 14, fontWeight: '600' }}>Logout</Text>
-          </TouchableOpacity>
-        ),
-      }}
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#64748b',
+      })}
     >
-      <Stack.Screen
-        name="StudentDashboard"
-        component={StudentDashboardScreen}
-        options={{ headerTitle: 'My Dashboard' }}
-      />
-    </Stack.Navigator>
+      <Tab.Screen name="Home" component={StudentDashboardScreen} options={{ headerTitle: 'Dashboard' }} />
+      <Tab.Screen name="Subjects" component={SubjectsScreen} options={{ headerTitle: 'Subjects' }} />
+      <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ headerTitle: 'Schedule' }} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ headerTitle: 'Notifications' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: 'Profile' }} />
+    </Tab.Navigator>
   );
 };

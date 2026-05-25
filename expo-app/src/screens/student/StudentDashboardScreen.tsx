@@ -9,18 +9,21 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   StyleSheet,
   useWindowDimensions,
   RefreshControl,
-  TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getMyEnrollments } from '../../services/enrollments.service';
 import { MyEnrollmentsResponse } from '../../types';
+import StudentHeader from '../../components/StudentHeader';
+import DashboardCard from '../../components/DashboardCard';
+import QuickActionCard from '../../components/QuickActionCard';
+import SubjectCard from '../../components/SubjectCard';
+import LoadingSkeleton from '../../components/LoadingSkeleton';
+import EmptyState from '../../components/EmptyState';
 
 const styles = StyleSheet.create({
   container: {
@@ -206,9 +209,11 @@ const StudentDashboardScreen: React.FC<StudentDashboardScreenProps> = ({ navigat
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          <LoadingSkeleton />
+          <LoadingSkeleton />
+          <LoadingSkeleton />
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -221,10 +226,7 @@ const StudentDashboardScreen: React.FC<StudentDashboardScreenProps> = ({ navigat
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.pageWrapper}>
-          <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: titleFontSize }]}>My Dashboard</Text>
-            <Text style={styles.subtitle}>View your enrollments</Text>
-          </View>
+          <StudentHeader user={null} />
 
           {error && (
             <View style={styles.errorContainer}>
@@ -233,90 +235,32 @@ const StudentDashboardScreen: React.FC<StudentDashboardScreenProps> = ({ navigat
           )}
 
           {data && (
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, statCardLayout]}>
-                <LinearGradient colors={["#2563eb", "#3b82f6"]} style={styles.statHeader}>
-                  <Text style={styles.statCount}>{data.total_subjects}</Text>
-                  <View style={styles.statIconCircle}>
-                    <Icon name="book-open-page-variant" size={20} color="#fff" />
-                  </View>
-                </LinearGradient>
-                <Text style={styles.statLabel}>Enrolled Subjects</Text>
-              </View>
-
-              <View style={[styles.statCard, statCardLayout]}>
-                <LinearGradient colors={["#10b981", "#34d399"]} style={styles.statHeader}>
-                  <Text style={styles.statCount}>{data.total_units}</Text>
-                  <View style={styles.statIconCircle}>
-                    <Icon name="alpha-u-circle" size={20} color="#fff" />
-                  </View>
-                </LinearGradient>
-                <Text style={styles.statLabel}>Total Units</Text>
-              </View>
-
-              <View style={[styles.statCard, { flexBasis: '100%', maxWidth: 760 }]}>
-                <LinearGradient colors={["#8b5cf6", "#a78bfa"]} style={styles.statHeader}>
-                  <Text style={styles.statCount}>{data.enrollments.length}</Text>
-                  <View style={styles.statIconCircle}>
-                    <Icon name="grid" size={20} color="#fff" />
-                  </View>
-                </LinearGradient>
-                <Text style={styles.statLabel}>Sections</Text>
-              </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+              <DashboardCard title="Subjects" value={data.total_subjects} icon="book-open-page-variant" />
+              <DashboardCard title="Units" value={data.total_units} colors={["#06b6d4", "#06b6d4"]} icon="alpha-u-circle" />
+              <DashboardCard title="Sections" value={data.enrollments.length} colors={["#8b5cf6", "#a78bfa"]} icon="grid" />
             </View>
           )}
 
-          {data && data.enrollments.length > 0 ? (
-            <>
-              <Text style={[styles.sectionTitle, { fontSize: sectionFontSize }]}>My Enrollments</Text>
-              {data.enrollments.map((enrollment) => (
-                <View key={enrollment.id} style={styles.enrollmentCard}>
-                  <View style={styles.enrollmentHeaderRow}>
-                    <Text style={styles.enrollmentTitle}>
-                      {typeof enrollment.subject === 'object'
-                        ? enrollment.subject.title
-                        : 'Subject #' + enrollment.subject}
-                    </Text>
-                    <View>
-                      <View
-                        style={{
-                          backgroundColor:
-                            enrollment.status === 'enrolled' ? '#d1fae5' : '#f3f4f6',
-                          borderRadius: 999,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: enrollment.status === 'enrolled' ? '#047857' : '#374151',
-                            fontWeight: '700',
-                            fontSize: 12,
-                          }}
-                        >
-                          {enrollment.status.toUpperCase()}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <Text style={styles.enrollmentInfo}>
-                    Section:{' '}
-                    {typeof enrollment.section === 'object'
-                      ? enrollment.section.name
-                      : 'Section #' + enrollment.section}
-                  </Text>
-                  <Text style={styles.enrollmentInfo}>
-                    Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                  </Text>
-                </View>
-              ))}
-            </>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No enrollments yet</Text>
+          <View style={{ marginTop: 14 }}>
+            <Text style={[styles.sectionTitle, { fontSize: sectionFontSize }]}>Quick Actions</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              <QuickActionCard label="Subjects" icon="book-open-page-variant" onPress={()=>navigation.navigate('Subjects')} />
+              <QuickActionCard label="Schedule" icon="calendar-range" onPress={()=>navigation.navigate('Schedule')} />
+              <QuickActionCard label="Prospectus" icon="file-document-outline" onPress={()=>{}} />
+              <QuickActionCard label="Grades" icon="chart-bar" onPress={()=>{}} />
             </View>
-          )}
+
+            <Text style={[styles.sectionTitle, { fontSize: sectionFontSize }]}>Enrolled Subjects</Text>
+
+            {data && data.enrollments.length > 0 ? (
+              data.enrollments.map(e => <SubjectCard key={e.id} enrollment={e} />)
+            ) : (
+              <View style={{ padding: 12 }}>
+                <EmptyState title="No enrollments yet" subtitle="You have not enrolled in any subjects." buttonLabel="Refresh" onPress={onRefresh} />
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

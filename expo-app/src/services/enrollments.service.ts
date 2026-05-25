@@ -45,3 +45,17 @@ export const dropEnrollment = async (id: number): Promise<Enrollment> => {
   );
   return response.data;
 };
+
+// Backend currently does not implement a completion endpoint.
+// Keep this stub to avoid accidental 404s from the app.
+export const completeEnrollment = async (_id: number): Promise<never> => {
+  throw new Error('Enrollment completion endpoint is not implemented on the backend.');
+};
+
+
+// Admin delete enrollment.
+// If backend doesn’t implement this route, remove it and wire delete from correct endpoint.
+export const deleteEnrollment = async (id: number): Promise<void> => {
+  await API.delete(`enrollments/${id}/`);
+};
+

@@ -114,7 +114,6 @@ export interface NewSection {
 
 export interface Enrollment {
   id: number;
-  student: Student | { id: number; name: string };
   student_id: string;
   student_name: string;
   subject: Subject | number;
@@ -126,7 +125,8 @@ export interface Enrollment {
 
 export interface NewEnrollment {
   student_id: number;
-  section_id: number;
+  subject_id: number;
+  section_id?: number;
 }
 
 export interface MyEnrollmentsResponse {

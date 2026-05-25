@@ -16,6 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../../services/students.service';
 import { Student, NewStudent } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { useAdminRefresh } from '../../contexts/AdminRefreshContext';
+
+
 
 const yearLevels = ['1st', '2nd', '3rd', '4th'];
 
@@ -57,6 +60,8 @@ const styles = StyleSheet.create({
 
 const StudentsScreen: React.FC = () => {
   const { width } = useWindowDimensions();
+  const { bump } = useAdminRefresh();
+
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -126,6 +131,9 @@ const StudentsScreen: React.FC = () => {
       }
       await loadStudents();
       resetForm();
+      bump();
+
+
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.error || 'Failed to save student.');
@@ -143,7 +151,8 @@ const StudentsScreen: React.FC = () => {
         onPress: async () => {
           try {
             await deleteStudent(id);
-            await loadStudents();
+              await loadStudents();
+              bump();
           } catch (err) {
             console.error(err);
             Alert.alert('Error', 'Failed to delete student.');

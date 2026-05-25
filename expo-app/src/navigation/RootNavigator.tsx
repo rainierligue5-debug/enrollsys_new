@@ -11,8 +11,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthNavigator } from './AuthNavigator';
 import { AdminNavigator } from './AdminNavigator';
 import { StudentNavigator } from './StudentNavigator';
+import { AdminRefreshProvider } from '../contexts/AdminRefreshContext';
 
 const Stack = createNativeStackNavigator();
+
 
 export const RootNavigator: React.FC = () => {
   const { user, isLoading, isSignout, signIn } = useAuth();
@@ -51,12 +53,20 @@ export const RootNavigator: React.FC = () => {
         ) : user?.role === 'admin' ? (
           <Stack.Screen
             name="Admin"
-            component={AdminNavigator}
             options={{
               animationTypeForReplace: 'pop',
             }}
-          />
+          >
+            {() => (
+              <AdminRefreshProvider>
+                <AdminNavigator />
+              </AdminRefreshProvider>
+            )}
+          </Stack.Screen>
+
         ) : (
+
+
           <Stack.Screen
             name="Student"
             component={StudentNavigator}

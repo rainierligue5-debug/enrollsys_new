@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from dotenv import load_dotenv
+import secrets
 from pathlib import Path
 from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,7 +23,17 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
+# Prefer an environment-provided SECRET_KEY. If missing or too short,
+# generate a sufficiently long fallback for development.
+env_secret = os.getenv('SECRET_KEY') or os.getenv('DJANGO_SECRET_KEY')
+if env_secret and len(env_secret) >= 32:
+    SECRET_KEY = env_secret
+else:
+    # Build a stable-ish default for local development by seeding a
+    # readable prefix and appending a secure random string to reach
+    # the recommended minimum length for HMAC-SHA256 (>= 32 bytes).
+    fallback_prefix = 'django-insecure-fallback-key-'
+    SECRET_KEY = (env_secret or fallback_prefix) + secrets.token_urlsafe(32)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
@@ -178,6 +189,10 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    # Explicitly set the signing key used by PyJWT/SimpleJWT. This
+    # ensures tokens are signed with a sufficiently long key even if
+    # the environment-provided SECRET_KEY was missing or short.
+    'SIGNING_KEY': SECRET_KEY,
 } 
 
 # SMTP Email Configuration

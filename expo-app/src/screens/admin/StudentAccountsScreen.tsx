@@ -159,6 +159,11 @@ const StudentAccountsScreen: React.FC = () => {
 
   const getStudentName = (studentId: number) => students.find((student) => student.id === studentId)?.name || 'Unknown student';
 
+  const viewCredentials = (account: AdminStudentUser) => {
+    const student = students.find((s) => s.id === (account.student ?? 0));
+    Alert.alert('Student Credentials', `Email: ${account.email}\nName: ${student?.name || 'N/A'}\nStudent ID: ${student?.student_id || 'N/A'}`);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -263,6 +268,9 @@ const StudentAccountsScreen: React.FC = () => {
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={[styles.actionButton, styles.actionEdit]} onPress={() => handleEdit(account)}>
                     <Text style={styles.actionEditText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#eef2ff' }]} onPress={() => viewCredentials(account)}>
+                    <Text style={{ color: '#4f46e5', fontWeight: '700' }}>View</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.actionButton, styles.actionDelete]} onPress={() => handleDelete(account.id)}>
                     <Text style={styles.actionDeleteText}>Delete</Text>

@@ -228,15 +228,33 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
             self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
+            # DRF validation errors (400)
+            detail = e.detail
+            # Normalize payload to a readable message
+            if isinstance(detail, (list, tuple)):
+                message = ", ".join([str(x) for x in detail])
+            elif isinstance(detail, dict):
+                # common shape: {field: [msg]} or {"non_field_errors": [msg]}
+                message = ", ".join([
+                    ", ".join([str(x) for x in v]) for v in detail.values()
+                ])
+            else:
+                message = str(detail)
+
+            return Response({'error': message, 'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Never allow 500 due to unexpected create failures.
             return Response(
-                {'error': str(e.detail)},
+                {'error': 'Failed to create enrollment', 'detail': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
 
     @action(detail=False, methods=['post'])
     def bulk_enroll(self, request):
         enrollments_data = request.data.get('enrollments', [])
-        
+
         if not enrollments_data:
             return Response(
                 {'error': 'No enrollments provided'},
@@ -252,54 +270,36 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
                 subject_id = enrollment_data.get('subject_id')
                 section_id = enrollment_data.get('section_id')
 
-                student = get_object_or_404(Student, id=student_id)
-                subject = get_object_or_404(Subject, id=subject_id)
-
-                if Enrollment.objects.filter(
-                    student=student,
-                    subject=subject,
-                    status='enrolled'
-                ).exists():
+                if not student_id:
                     failed_enrollments.append({
                         'student_id': student_id,
                         'subject_id': subject_id,
-                        'error': f'Student already enrolled in {subject.code}'
+                        'error': 'student_id is required'
+                    })
+                    continue
+                if not subject_id and not section_id:
+                    failed_enrollments.append({
+                        'student_id': student_id,
+                        'subject_id': subject_id,
+                        'error': 'subject_id is required'
                     })
                     continue
 
-                if not section_id:
-                    available_section = next(
-                        (s for s in subject.sections.all() if s.has_available_capacity()),
-                        None
-                    )
-                    if not available_section:
-                        failed_enrollments.append({
-                            'student_id': student_id,
-                            'subject_id': subject_id,
-                            'error': f'No available sections for {subject.code}'
-                        })
-                        continue
-                    section_id = available_section.id
-                else:
-                    section = get_object_or_404(Section, id=section_id)
-                    if not section.has_available_capacity():
-                        failed_enrollments.append({
-                            'student_id': student_id,
-                            'subject_id': subject_id,
-                            'error': f'Section {section.name} has reached capacity'
-                        })
-                        continue
+                # Use serializer for consistent validation (prevents 500)
+                serializer = self.get_serializer(data={
+                    'student_id_write': student_id,
+                    'subject_id_write': subject_id,
+                    'section_id_write': section_id,
+                })
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+                successful_enrollments.append(serializer.data)
 
-                enrollment = Enrollment.objects.create(
-                    student_id=student_id,
-                    subject_id=subject_id,
-                    section_id=section_id,
-                    status='enrolled'
-                )
-                successful_enrollments.append(
-                    EnrollmentSerializer(enrollment).data
-                )
-
+            except ValidationError as e:
+                failed_enrollments.append({
+                    'data': enrollment_data,
+                    'error': str(e.detail)
+                })
             except Exception as e:
                 failed_enrollments.append({
                     'data': enrollment_data,
@@ -315,6 +315,7 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
                 'failed': len(failed_enrollments)
             }
         }, status=status.HTTP_201_CREATED)
+
 
     @action(detail=True, methods=['post'])
     def drop(self, request, pk=None):
